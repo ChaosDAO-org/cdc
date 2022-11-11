@@ -551,64 +551,7 @@ impl pallet_membership::Config<House2Membership> for Runtime {
 }
 
 parameter_types! {
-	pub LaunchPeriod: BlockNumber = 7 * DAYS;
-	pub VotingPeriod: BlockNumber = 7 * DAYS;
-	pub FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
-	pub const MinimumDeposit: Balance = 100;
-	pub EnactmentPeriod: BlockNumber = 8 * DAYS;
-	pub CooloffPeriod: BlockNumber = 7 * DAYS;
-	pub const InstantAllowed: bool = true;
-	pub const MaxVotes: u32 = 100;
 	pub const MaxProposals: u32 = 100;
-	pub const MaxDeposits: u32 = 100;
-	pub const MaxBlacklisted: u32 = 100;
-}
-
-impl pallet_democracy::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type EnactmentPeriod = EnactmentPeriod;
-	type VoteLockingPeriod = EnactmentPeriod;
-	type LaunchPeriod = LaunchPeriod;
-	type VotingPeriod = VotingPeriod;
-	type MinimumDeposit = MinimumDeposit;
-	/// A straight majority of the council can decide what their next motion is.
-	type ExternalOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
-	/// A majority can have the next scheduled referendum be a straight majority-carries vote.
-	type ExternalMajorityOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
-	/// A unanimous council can have the next scheduled referendum be a straight default-carries
-	/// (NTB) vote.
-	type ExternalDefaultOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 1>;
-	/// Two thirds of the technical committee can have an `ExternalMajority/ExternalDefault` vote
-	/// be tabled immediately and with a shorter voting/enactment period.
-	type FastTrackOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 2, 3>;
-	type InstantOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 1>;
-	type InstantAllowed = InstantAllowed;
-	type FastTrackVotingPeriod = FastTrackVotingPeriod;
-	// To cancel a proposal which has been passed, 2/3 of the council must agree to it.
-	type CancellationOrigin = EnsureRoot<AccountId>;
-	type BlacklistOrigin = EnsureRoot<AccountId>;
-	// To cancel a proposal before it has been passed, root must agree.
-	type CancelProposalOrigin = EnsureRoot<AccountId>;
-	// Any single technical committee member may veto a coming council proposal, however they can
-	// only do it once and it lasts only for the cooloff period.
-	type VetoOrigin = pallet_collective::EnsureMember<AccountId, House1Collective>;
-	type CooloffPeriod = CooloffPeriod;
-	type Slash = ();
-	type Scheduler = Scheduler;
-	type PalletsOrigin = OriginCaller;
-	type MaxVotes = MaxVotes;
-	type WeightInfo = ();
-	type MaxProposals = MaxProposals;
-
-	type Proposal = RuntimeCall;
-	type PreimageByteDeposit = PreimageByteDeposit;
-	type OperationalPreimageOrigin = pallet_collective::EnsureMember<AccountId, House1Collective>;
 }
 
 parameter_types! {
@@ -681,8 +624,6 @@ construct_runtime!(
 
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 34,
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 35,
-
-		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 16,
 
 		House1: pallet_collective::<Instance1>::{Pallet, Call, Event<T>, Origin<T>, Config<T>} = 69,
 		House1Members: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} = 70,
