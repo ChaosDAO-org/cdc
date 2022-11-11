@@ -25,6 +25,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
+use frame_support::traits::EqualPrivilegeOnly;
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -457,9 +458,193 @@ impl pallet_collator_selection::Config for Runtime {
 	type WeightInfo = ();
 }
 
-/// Configure the pallet template in pallets/template.
-impl pallet_template::Config for Runtime {
+use pallet_collective::PrimeDefaultVote;
+
+parameter_types! {
+	pub const MotionDuration: u32 = 3;
+	pub const MaxMembers: u32 = 50;
+	pub const MaxHouses: u32 = 2;
+}
+
+pub type GovernmentCollective = pallet_collective::Instance3;
+impl pallet_collective::Config<GovernmentCollective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = MotionDuration;
+	type MaxProposals = MaxProposals;
+	type MaxMembers = MaxMembers;
+	type DefaultVote = PrimeDefaultVote;
+	type WeightInfo = ();
+}
+
+pub type HousesMembership = pallet_membership::Instance3;
+impl pallet_membership::Config<HousesMembership> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddOrigin = EnsureRoot<AccountId>;
+	type RemoveOrigin = EnsureRoot<AccountId>;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type ResetOrigin = EnsureRoot<AccountId>;
+	type PrimeOrigin = EnsureRoot<AccountId>;
+	type MembershipInitialized = Government;
+	type MembershipChanged = Government;
+	type MaxMembers = MaxHouses;
+	type WeightInfo = ();
+}
+
+pub type House1Collective = pallet_collective::Instance1;
+impl pallet_collective::Config<House1Collective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = MotionDuration;
+	type MaxProposals = MaxProposals;
+	type MaxMembers = MaxMembers;
+	type DefaultVote = PrimeDefaultVote;
+	type WeightInfo = ();
+}
+
+pub type House1Membership = pallet_membership::Instance1;
+impl pallet_membership::Config<House1Membership> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type RemoveOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type SwapOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type ResetOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type PrimeOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type MembershipInitialized = House1;
+	type MembershipChanged = House1;
+	type MaxMembers = MaxMembers;
+	type WeightInfo = ();
+}
+
+pub type House2Collective = pallet_collective::Instance2;
+impl pallet_collective::Config<House2Collective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = MotionDuration;
+	type MaxProposals = MaxProposals;
+	type MaxMembers = MaxMembers;
+	type DefaultVote = PrimeDefaultVote;
+	type WeightInfo = ();
+}
+
+pub type House2Membership = pallet_membership::Instance2;
+impl pallet_membership::Config<House2Membership> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type RemoveOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type SwapOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type ResetOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type PrimeOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	type MembershipInitialized = House2;
+	type MembershipChanged = House2;
+	type MaxMembers = MaxMembers;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub LaunchPeriod: BlockNumber = 7 * DAYS;
+	pub VotingPeriod: BlockNumber = 7 * DAYS;
+	pub FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
+	pub const MinimumDeposit: Balance = 100;
+	pub EnactmentPeriod: BlockNumber = 8 * DAYS;
+	pub CooloffPeriod: BlockNumber = 7 * DAYS;
+	pub const InstantAllowed: bool = true;
+	pub const MaxVotes: u32 = 100;
+	pub const MaxProposals: u32 = 100;
+	pub const MaxDeposits: u32 = 100;
+	pub const MaxBlacklisted: u32 = 100;
+}
+
+impl pallet_democracy::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type EnactmentPeriod = EnactmentPeriod;
+	type VoteLockingPeriod = EnactmentPeriod;
+	type LaunchPeriod = LaunchPeriod;
+	type VotingPeriod = VotingPeriod;
+	type MinimumDeposit = MinimumDeposit;
+	/// A straight majority of the council can decide what their next motion is.
+	type ExternalOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	/// A majority can have the next scheduled referendum be a straight majority-carries vote.
+	type ExternalMajorityOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 2>;
+	/// A unanimous council can have the next scheduled referendum be a straight default-carries
+	/// (NTB) vote.
+	type ExternalDefaultOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 1>;
+	/// Two thirds of the technical committee can have an `ExternalMajority/ExternalDefault` vote
+	/// be tabled immediately and with a shorter voting/enactment period.
+	type FastTrackOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 2, 3>;
+	type InstantOrigin =
+		pallet_collective::EnsureProportionAtLeast<AccountId, House1Collective, 1, 1>;
+	type InstantAllowed = InstantAllowed;
+	type FastTrackVotingPeriod = FastTrackVotingPeriod;
+	// To cancel a proposal which has been passed, 2/3 of the council must agree to it.
+	type CancellationOrigin = EnsureRoot<AccountId>;
+	type BlacklistOrigin = EnsureRoot<AccountId>;
+	// To cancel a proposal before it has been passed, root must agree.
+	type CancelProposalOrigin = EnsureRoot<AccountId>;
+	// Any single technical committee member may veto a coming council proposal, however they can
+	// only do it once and it lasts only for the cooloff period.
+	type VetoOrigin = pallet_collective::EnsureMember<AccountId, House1Collective>;
+	type CooloffPeriod = CooloffPeriod;
+	type Slash = ();
+	type Scheduler = Scheduler;
+	type PalletsOrigin = OriginCaller;
+	type MaxVotes = MaxVotes;
+	type WeightInfo = ();
+	type MaxProposals = MaxProposals;
+
+	type Proposal = RuntimeCall;
+	type PreimageByteDeposit = PreimageByteDeposit;
+	type OperationalPreimageOrigin = pallet_collective::EnsureMember<AccountId, House1Collective>;
+}
+
+parameter_types! {
+	pub const PreimageBaseDeposit: Balance = 1;
+	pub const PreimageByteDeposit: Balance = 1;
+	pub const MaxSize: u32 = 999999;
+}
+
+impl pallet_preimage::Config for Runtime {
+	type WeightInfo = ();
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type BaseDeposit = PreimageBaseDeposit;
+	type ByteDeposit = PreimageByteDeposit;
+	type MaxSize = MaxSize;
+}
+
+parameter_types! {
+	pub MaximumSchedulerWeight: Weight = Weight::from_ref_time(9999999999);
+	pub const MaxScheduledPerBlock: u32 = 50;
+	pub const NoPreimagePostponement: Option<u32> = Some(10);
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeEvent = RuntimeEvent;
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = EnsureRoot<AccountId>;
+	type MaxScheduledPerBlock = MaxScheduledPerBlock;
+	type WeightInfo = ();
+	type OriginPrivilegeCmp = EqualPrivilegeOnly;
+	type PreimageProvider = Preimage;
+	type NoPreimagePostponement = NoPreimagePostponement;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -494,8 +679,19 @@ construct_runtime!(
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 32,
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 33,
 
-		// Template
-		TemplatePallet: pallet_template::{Pallet, Call, Storage, Event<T>}  = 40,
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 34,
+		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 35,
+
+		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 16,
+
+		House1: pallet_collective::<Instance1>::{Pallet, Call, Event<T>, Origin<T>, Config<T>} = 69,
+		House1Members: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} = 70,
+
+		House2: pallet_collective::<Instance2>::{Pallet, Call, Event<T>, Origin<T>, Config<T>} = 96,
+		House2Members: pallet_membership::<Instance2>::{Pallet, Call, Storage, Event<T>, Config<T>} = 97,
+
+		Government: pallet_collective::<Instance3>::{Pallet, Call, Event<T>, Origin<T>, Config<T>} = 98,
+		Houses: pallet_membership::<Instance3>::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
 	}
 );
 
